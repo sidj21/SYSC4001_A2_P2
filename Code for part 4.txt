@@ -1,0 +1,90 @@
+// Code for part 4
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <sys/ipc.h>
+#include <sys/shm.h>
+#include <sys/wait.h>
+
+struct SharedData {
+    int multiple;
+    int counter;
+};
+
+int main() {
+    int shm_id;
+    struct SharedData *shared;
+
+    // Creating the shared memory segment
+    shm_id = shmget(IPC_PRIVATE, sizeof(struct SharedData), IPC_CREAT | 0666);
+    if (shm_id < 0) {
+        perror("shmget failed");
+        exit(1);
+    }
+
+    // Attaching the shared memory segment 
+    shared = (struct SharedData *) shmat(shm_id, NULL, 0);
+    if (shared == (void *) -1) {
+        perror("shmat failed");
+        exit(1);
+    }
+
+    // Initialize shared variables
+    shared->multiple = 3;  // change this value to test different multiples
+    shared->counter = 0;
+
+    pid_t pid = fork();
+
+    if (pid < 0) {
+        perror("fork failed");
+        exit(1);
+    }
+
+    if (pid == 0) {
+        // ---------------- CHILD PROCESS ----------------
+        while (shared->counter <= 500) {
+            if (shared->counter <= 100) {
+                // Wait until counter > 100
+                usleep(100000);
+                continue;
+            }
+
+            printf("[Child PID %d] Shared counter = %d (multiple = %d)\n",
+                   getpid(), shared->counter, shared->multiple);
+
+            usleep(200000); // slow down output
+        }
+
+        printf("[Child PID %d] Counter > 500. Child exiting.\n", getpid());
+
+        // Detach shared memory
+        shmdt(shared);
+
+        exit(0);
+    } 
+    else {
+        // ---------------- PARENT PROCESS ----------------
+        while (shared->counter <= 500) {
+            if (shared->counter % shared->multiple == 0) {
+                printf("[Parent PID %d] %d is a multiple of %d\n",
+                       getpid(), shared->counter, shared->multiple);
+            }
+
+            shared->counter++; // update shared variable
+            usleep(100000);    // small delay
+        }
+
+        printf("[Parent PID %d] Counter > 500. Parent waiting for child...\n", getpid());
+
+        // Wait for the child to finish
+        wait(NULL);
+
+        // Detach and remove shared memory
+        shmdt(shared);
+        shmctl(shm_id, IPC_RMID, NULL);
+
+        printf("[Parent PID %d] Both processes finished. Shared memory removed.\n", getpid());
+    }
+
+    return 0;
+}

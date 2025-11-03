@@ -1,0 +1,40 @@
+// Code for part 3
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h> // To be able to use usleep for the delay
+ 
+int main() {
+    pid_t pid; 
+    
+    pid = fork(); 
+        if (pid < 0){
+            perror("fork() failed"); 
+            exit(1);
+        if (pid == 0){
+            int counter_child = 0;            
+            while(1){
+                printf("Cycle number: %d", counter_child--);
+                }
+                usleep(50000); // Creates a delay of 0.5 secs
+                
+                if (counter_child < -500){
+                    printf("Counter reach below -500. Child process exiting...\n"); 
+                    exit(1); 
+                }
+                
+
+        }
+        else{
+            //int count_parent = 0;            
+            printf("Parent process counter waitin for child process to finish...\n"); 
+                wait(NULL); 
+                
+            printf("Child process has finished executing and parent process is now exiting..."); 
+            }
+        }
+    }
+    
+    
+    return 0;
+}

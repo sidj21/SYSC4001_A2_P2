@@ -1,0 +1,112 @@
+// Code for part 5
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <sys/ipc.h>
+#include <sys/shm.h>
+#include <sys/sem.h>
+#include <sys/wait.h>
+
+struct SharedData {
+    int multiple;
+    int counter;
+};
+
+// Define union semun (required by semctl)
+union semun {
+    int val;
+    struct semid_ds *buf;
+    unsigned short *array;
+};
+
+void sem_wait(int sem_id) {
+    struct sembuf p = {0, -1, 0}; // P (wait) operation
+    semop(sem_id, &p, 1);
+}
+
+void sem_signal(int sem_id) {
+    struct sembuf v = {0, 1, 0}; // V (signal) operation
+    semop(sem_id, &v, 1);
+}
+
+int main() {
+    int shm_id, sem_id;
+    struct SharedData *shared;
+
+    // Create shared memory
+    shm_id = shmget(IPC_PRIVATE, sizeof(struct SharedData), IPC_CREAT | 0666);
+    if (shm_id < 0) {
+        perror("shmget failed");
+        exit(1);
+    }
+
+    // Attach shared memory
+    shared = (struct SharedData *)shmat(shm_id, NULL, 0);
+    shared->multiple = 3;
+    shared->counter = 0;
+
+    // Create semaphore (1 semaphore in set)
+    sem_id = semget(IPC_PRIVATE, 1, IPC_CREAT | 0666);
+    if (sem_id < 0) {
+        perror("semget failed");
+        exit(1);
+    }
+
+    // Initialize semaphore to 1
+    union semun sem_arg;
+    sem_arg.val = 1;
+    semctl(sem_id, 0, SETVAL, sem_arg);
+
+    pid_t pid = fork();
+
+    if (pid == 0) {
+        // Child process
+        while (1) {
+            sem_wait(sem_id); // Lock shared memory
+
+            if (shared->counter > 500) {
+                sem_signal(sem_id);
+                break;
+            }
+
+            if (shared->counter > 100) {
+                printf("Child: counter = %d\n", shared->counter);
+                shared->counter--;
+            }
+
+            sem_signal(sem_id); // Unlock shared memory
+            usleep(100000);
+        }
+
+        shmdt(shared);
+        exit(0);
+    } else {
+        // Parent process
+        while (1) {
+            sem_wait(sem_id);
+
+            if (shared->counter > 500) {
+                sem_signal(sem_id);
+                break;
+            }
+
+            shared->counter++;
+            if (shared->counter % shared->multiple == 0) {
+                printf("Parent: %d is a multiple of %d\n",
+                       shared->counter, shared->multiple);
+            }
+
+            sem_signal(sem_id);
+            usleep(100000);
+        }
+
+        wait(NULL);
+
+        // Cleanup
+        shmdt(shared);
+        shmctl(shm_id, IPC_RMID, NULL);
+        semctl(sem_id, 0, IPC_RMID);
+    }
+
+    return 0;
+}

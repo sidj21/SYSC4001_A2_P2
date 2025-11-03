@@ -1,0 +1,33 @@
+// Code for part 1
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h> // To be able to use usleep for the delay
+ 
+int main() {
+    pid_t pid; 
+    
+    pid = fork(); 
+        if (pid < 0){
+            perror("fork() failed"); 
+            exit(1);
+        if (pid == 0){
+            int count_child = 0; 
+            while(1){
+                printf("Child process counter: %d\n" , counter_child++);  
+                usleep(50000); // Creates a delay of 0.5 secs
+            }
+        }
+        else{
+            int count_parent = 0;            
+            while(1){
+                printf("Parent process counter: %d\n", counter_parent++); 
+                usleep(50000); // Creates a delay of 0.5 secs
+
+            }
+        }
+    }
+    
+    
+    return 0;
+}
