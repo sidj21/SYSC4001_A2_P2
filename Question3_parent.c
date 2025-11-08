@@ -13,16 +13,15 @@ int main() {
 
     if (pid == 0) {
         // CHILD: exec into Program 2
-        execl("./prog2", "./prog2", NULL);
+        execl("./home/rirankan_the_beast", "./Q3_c", NULL);
 
         // Only runs if exec fails
         perror("exec failed");
         exit(1);
     }
 
-    // -------------------------------
-    // PARENT PROCESS (Process 1)
-    // -------------------------------
+ 
+    // --------------------PARENT PROCESS (Process 1)----------------------
 
     int counter = 0;
     int cycle = 0;
@@ -42,12 +41,12 @@ int main() {
         counter++;
         cycle++;
 
-        usleep(200000); // 2 second delay 
+        usleep(2000000); // 2 second delay 
 
         // Check if child has finished yet
         pid_t result = waitpid(pid, NULL, WNOHANG);
         // waitpid(pid of process waiting for, return values of process (in our case we don't need it), option to block or not block the current process from running during these checks)
-        
+
 
         if (result == pid) {
             // Child finished
