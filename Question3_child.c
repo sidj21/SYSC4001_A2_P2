@@ -12,7 +12,7 @@ int main() {
         counter--;  
         cycle++;
 
-        usleep(200000);  // A 2 second delay 
+        usleep(2000000);  // A 2 second delay 
 
         if (counter < -500) {
             printf("Child reached below -500. Exiting...\n");
