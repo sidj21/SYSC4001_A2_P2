@@ -16,6 +16,8 @@ struct SharedData {
 union semun {
     int val; // initialize a single value to set a semaphore value when SETVAL is used
     // SETVAL is a command used with semctl to set a single value to a single semaphore
+    struct semid_ds *buf; 
+    unsigned short *array;    
 };
 // This union is used to configure semaphore settings, such as initializing its value
 
@@ -164,3 +166,4 @@ int main() {
 
     return 0;
 }
+
