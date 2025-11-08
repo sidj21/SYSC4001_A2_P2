@@ -13,7 +13,7 @@ int main() {
 
     if (pid == 0) {
         // CHILD: exec into Program 2
-        execl("./home/rirankan_the_beast", "./Q3_c", NULL);
+        execl("./Q3_c", "Q3_c", NULL);
 
         // Only runs if exec fails
         perror("exec failed");
@@ -57,3 +57,4 @@ int main() {
 
     return 0;
 }
+
