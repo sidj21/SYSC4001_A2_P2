@@ -13,7 +13,7 @@ int main() {
 
     if (pid == 0) {
         // Child will exec Program 2
-        execl("./home/rirankan_the_beast", "./Q2_c", NULL); // Fails and runs the next line which deals with the error
+        execl(".Q2_c", "Q2_c", NULL); // Fails and runs the next line which deals with the error
         // execl(path, arg0, arg1 ..., command line arguments); 
         // after exec is successful, the child process image is replaced by the new program
         // If execl fails:
@@ -42,3 +42,4 @@ int main() {
 
     return 0;
 }
+
