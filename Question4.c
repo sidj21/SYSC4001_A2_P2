@@ -12,6 +12,7 @@ struct SharedData {
 };
 
 int main() {
+    //--------------------- Shared Memory Initilizations--------------------
     int shm_id;
     struct SharedData *shared;
 
@@ -52,28 +53,34 @@ int main() {
 
     if (pid == 0) {
         // ---------------- CHILD PROCESS ----------------
+     // ---------------- CHILD PROCESS ----------------
         while (shared->counter <= 500) {
 
             if (shared->counter <= 100) {
-                // Child must wait until counter > 100
                 usleep(100000);
-                continue;
+                continue; // wait until counter > 100
             }
 
-            // Child prints status
-            printf("[Child PID %d] Counter = %d (multiple = %d)\n",
-                   getpid(), shared->counter, shared->multiple);
+            // Print multiples vs non-multiples
+            if (shared->counter % shared->multiple == 0) {
+                printf("[Child PID %d] Counter = %d is a multiple of %d\n",
+                    getpid(), shared->counter, shared->multiple);
+            } else {
+                printf("[Child PID %d] Counter = %d\n",
+                    getpid(), shared->counter);
+            }
 
-            usleep(200000); // Slow down
+            fflush(stdout);       // ensure immediate output
+            usleep(200000);       // delay for readability
         }
 
+        // After loop ends
         printf("[Child PID %d] Counter > 500. Child exiting.\n", getpid());
-
-        // Detach shared memory
+        fflush(stdout);
         shmdt(shared);
         exit(0);
-    }
 
+    }
     else {
     // ---------------- PARENT PROCESS ----------------
         while (shared->counter <= 500) {
@@ -82,7 +89,12 @@ int main() {
             if (shared->counter % shared->multiple == 0) {
                 printf("[Parent PID %d] %d is a multiple of %d\n",
                        getpid(), shared->counter, shared->multiple);
+            } 
+            else {
+                printf("[Parent PID %d] Counter = %d\n",
+                       getpid(), shared->counter);
             }
+
 
             shared->counter++;  // Update shared counter
             usleep(100000);
@@ -103,3 +115,4 @@ int main() {
 
     return 0;
 }
+
