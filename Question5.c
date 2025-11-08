@@ -3,9 +3,9 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <sys/ipc.h>
-#include <sys/shm.h>
-#include <sys/sem.h>
-#include <sys/wait.h>
+#include <sys/shm.h> // shared memory functions
+#include <sys/sem.h> // semaphore functions
+#include <sys/wait.h> // for wait system call 
 
 struct SharedData {
     int multiple;   // shared multiple value
@@ -14,20 +14,30 @@ struct SharedData {
 
 // Define union semun (required by semctl)
 union semun {
-    int val;
-    struct semid_ds *buf;
-    unsigned short *array;
+    int val; // initialize a single value to set a semaphore value when SETVAL is used
+    // SETVAL is a command used with semctl to set a single value to a single semaphore
 };
+// This union is used to configure semaphore settings, such as initializing its value
 
-// Semaphore wait (P) operation
+// Semaphore wait (P) operation (this locks the semaphore)
 void sem_wait(int sem_id) {
     struct sembuf p = {0, -1, 0};
+    // sembuf structure has three fields:
+    // sem_num: semaphore number in the set (0 for single semaphore)
+    // sem_op: operation to perform (-1 for wait) -> Decrement the semaphore value by 1
+    // sem_flg: operation flags (0 for default blocking behavior) -> Blocks the process from entering the semaphore
+    // if the semaphore value is 0 
     semop(sem_id, &p, 1);
 }
 
-// Semaphore signal (V) operation
+// Semaphore signal (V) operation (this unlocks the semaphore)
 void sem_signal(int sem_id) {
     struct sembuf v = {0, 1, 0};
+    // sembuf structure has three fields:
+    // sem_num: semaphore number in the set (0 for single semaphore)
+    // sem_op: operation to perform (1 for signal) -> Increment the semaphore value by 1
+    // sem_flg: operation flags (0 for default blocking behavior) -> Blocks the process from entering the semaphore
+    // if the semaphore value is 0
     semop(sem_id, &v, 1);
 }
 
@@ -37,6 +47,11 @@ int main() {
 
     // -------------------- Shared Memory --------------------
     shm_id = shmget(IPC_PRIVATE, sizeof(struct SharedData), IPC_CREAT | 0666);
+    // shm_id is the identifyer for the share memory segment
+    // shmget is used to create a new shared memory segment or access an existing one
+    // IPC_PRIVATE indicates a new private segment
+    // sizeof(struct SharedData) specifies the size of the segment
+    // IPC_CREAT | 0666 sets permissions to read and write for everyone
     if (shm_id < 0) {
         perror("shmget failed");
         exit(1);
@@ -53,6 +68,12 @@ int main() {
 
     // -------------------- Semaphore --------------------
     sem_id = semget(IPC_PRIVATE, 1, IPC_CREAT | 0666);
+    // sem_id is the semaphore identifier
+    // semget is used to create a new semaphore set or access an existing one and returns the id of the semaphore
+    // IPC_PRIVATE indicates a new private semaphore set that only inherited processes can access
+    // 1 specifies the number of semaphores in the set
+    // IPC_CREAT | 0666 creates a semaphore set if not already created and sets permissions to read and write for everyone
+
     if (sem_id < 0) {
         perror("semget failed");
         exit(1);
@@ -61,6 +82,11 @@ int main() {
     union semun sem_arg;
     sem_arg.val = 1;          // Binary semaphore
     semctl(sem_id, 0, SETVAL, sem_arg);
+    // semctl is used to initialize a semaphore
+    // sem_id is the semaphore identifier
+    // 0 is the semaphore number in the set (in this case we have only one)
+    // SETVAL is the command to set the value of the semaphore
+    // sem_arg provide the value to set (1 for binary semaphore)
 
     // -------------------- Fork --------------------
     pid_t pid = fork();
@@ -91,7 +117,7 @@ int main() {
             }
 
             sem_signal(sem_id);  // Unlock access
-            usleep(200000);      // delay for readability
+            usleep(2000000);      // delay for readability
         }
 
         printf("[Child PID %d] Counter > 500. Child exiting.\n", getpid());
@@ -122,7 +148,7 @@ int main() {
             fflush(stdout);
 
             sem_signal(sem_id);  // Unlock access
-            usleep(100000);      // small delay
+            usleep(1000000);      // small delay
         }
 
         wait(NULL);  // Wait for child to finish
