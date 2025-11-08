@@ -13,10 +13,11 @@ int main() {
 
     if (pid == 0) {
         // Child will exec Program 2
-        execl("./Question2_child.c", "./Question2_child.c", NULL); // Fails and runs the next line which deals with the error
+        execl("./home/rirankan_the_beast", "./Q2_c", NULL); // Fails and runs the next line which deals with the error
         // execl(path, arg0, arg1 ..., command line arguments); 
         // after exec is successful, the child process image is replaced by the new program
         // If execl fails:
+        // Issue with the path 
         perror("execl failed");
         exit(1);
     }
